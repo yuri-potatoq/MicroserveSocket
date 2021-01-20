@@ -1,3 +1,5 @@
+import SendSMTP.MassiveSend
+import SendSMTP.model.Body
 import com.google.gson.Gson
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
@@ -9,6 +11,7 @@ import java.lang.StringBuilder
 import java.net.Socket
 import java.util.*
 import java.util.stream.Collectors
+import kotlin.system.measureTimeMillis
 
 
 class Connections(
@@ -87,10 +90,24 @@ fun main(args: Array<String>) {
             when(response.service){
                 "massiveSendEmails" -> {
 
+                    val emailQueue: Queue<String> = LinkedList<String>()
+                    emailQueue.addAll(scrapyCsv(response.path))
+
+//                    val time = measureTimeMillis {
+//                        MassiveSend().massiveSend(3, Body(
+//                            "yuri.ylr@outlook.com",
+//                            "nao-responder@seatelecom.com.br",
+//                            "blabla","Eu")
+//                        )
+//                    }
+                    System.out.println("$response")
                 }
             }
 
         }.start()
     }
 
+}
+
+fun scrapyCsv(path: String): List<String>{
 }

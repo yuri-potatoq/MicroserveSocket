@@ -8,28 +8,32 @@ import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import kotlin.system.measureTimeMillis
 
 
 class MassiveSend(
-    val body: Body,
-    val retrofit: Retrofit
 ){
+    private val retrofit = Retrofit.Builder()
+        .baseUrl("https://api.smtplw.com.br/v1/")
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
 
     private val call = retrofit
         .create(Locaweb::class.java)
-        .emailResponse(body)
 
-    private fun requirer(call: Call<ResponseFields>): ResponseFields {
-        lateinit var item: ResponseFields
+    private fun requirer(body: Body) {
+        // lateinit var item: ResponseFields
 
-        call.enqueue(object: Callback<ResponseFields>{
+        call.emailResponse(body).enqueue(object: Callback<ResponseFields>{
             override fun onResponse(
                 call: Call<ResponseFields>,
                 response: Response<ResponseFields>
             ){
-                response?.body()?.let {
-                    System.out.println("Response $it")
-                    item = it
+                if (response.isSuccessful) {
+                    System.out.println("Response OK")
+
+                } else {
+                    System.out.println("Response ERROR")
                 }
             }
 
@@ -37,35 +41,29 @@ class MassiveSend(
                 call: Call<ResponseFields>,
                 t: Throwable
             ) {
-                TODO("Not yet implemented")
+                System.out.println("Require ERROR")
             }
 
         })
 
-
-
-        return item
     }
 
-    fun massiveSend(tasksNumber: Int) {
+    fun massiveSend(tasksNumber: Int, body: Body) {
         for (item in 1..tasksNumber){
-            requirer(call)
+            requirer(body)
         }
     }
 }
 
 fun main() {
 
-    val retrofit = Retrofit.Builder()
-        .baseUrl("https://api.smtplw.com.br/v1/")
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
+    val time = measureTimeMillis {
+        MassiveSend().massiveSend(3,Body(
+            "yuri.ylr@outlook.com",
+            "nao-responder@seatelecom.com.br",
+            "blabla","Eu"))
+    }
 
-    val call = MassiveSend(Body(
-        "yuri.ylr@outlook.com",
-        "nao-responder@seatelecom.com.br",
-        "teste",
-        "test"
-    ), retrofit).massiveSend(3)
+    System.out.println("tempo exec: $time")
 
 }
