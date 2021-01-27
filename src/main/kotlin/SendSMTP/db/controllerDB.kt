@@ -1,6 +1,7 @@
 package SendSMTP.db
 
 
+import SendSMTP.model.ResponseFields
 import kotlinx.coroutines.TimeoutCancellationException
 import java.sql.DriverManager
 import java.sql.Connection
@@ -16,12 +17,30 @@ class DBConnection(
     val user: String
 ){
     private lateinit var conn: Connection
+    private val dbName: String = "mydb"
+    private val tableName: String = "send"
+
+
     init {
         try {
             Class.forName("org.postgresql.Driver")
             this.conn = DriverManager.getConnection(
-                "jdbc:postgresql://localhost:5432/mydb"
+                "jdbc:postgresql://localhost:5432/$dbName"
             )
+            conn.createStatement().executeUpdate("""
+                CREATE TABLE IF NOT EXISTS $tableName( 
+                    id VARCHAR(12) NOT NULL, 
+                    target VARCHAR(24) NOT NULL, 
+                    subject VARCHAR(45) NOT NULL, 
+                    description VARCHAR(45), 
+                    title VARCHAR(24), 
+                    status VARCHAR(45) NOT NULL, 
+                    launch TIMESTAMP, 
+                    PRIMARY KEY (id)
+                );""".trimIndent()
+            )
+
+
 //            this.conn ?: throw Throwable()
 
         } catch(timeout: TimeoutCancellationException){
@@ -29,8 +48,28 @@ class DBConnection(
         }
     }
 
-    fun pgInsert(statement: PreparedStatement): IntArray? {
-        return statement.executeBatch()
+    fun pgInsert(responseObject: ResponseFields){
+        val listData = arrayOf("",
+            responseObject.data.id,
+            responseObject.data.attributes.to,
+            responseObject.data.attributes.subject,
+            responseObject.data.links.self,
+            "Envio de emails Sea Telecom",
+            responseObject.data.attributes.status
+        )
+
+        val query = conn.prepareStatement(
+        """
+            INSERT INTO $tableName values(?, ?, ?, ?, ?, ? , current_timestamp(0));
+        """.trimIndent())
+
+        for (index in 1..6) {
+            query.setString(index, listData[index].toString())
+        }
+
+        query.addBatch()
+        query.executeBatch()
+
     }
 
     fun pgSelect(query: String): ResultSet {
@@ -39,61 +78,6 @@ class DBConnection(
 
     }
 
-    fun takeStatement(query: String): PreparedStatement? {
-        return this.conn.prepareStatement(query)
-    }
-
 }
 
-data class Persons(
-    val id: Int,
-    val nome: String
-)
 
-fun init(){
-    val db = DBConnection(
-        database ="mydb",
-        port ="5432",
-        realm ="",
-        user = "postgres"
-    )
-
-    val rand = (100..1000).random()
-    println(rand)
-    val stm = db.takeStatement("insert into persons(id, nome) values(?, ?) ")
-    stm?.let {
-        stm.setInt(1, 772)
-        stm.setString(2,"Doe")
-        stm.addBatch()
-
-        stm.clearParameters()
-        stm.setInt(1, 773)
-        stm.setString(2,"Smith")
-        stm.addBatch()
-        val insert = db.pgInsert(stm)?.iterator()
-
-        val result = db.pgSelect("SELECT * FROM persons")
-        var registers: MutableList<Persons> = mutableListOf(Persons(1, ""))
-
-        result.let {
-            while(result.next()){
-                registers.add(Persons(
-                    id = it.getInt("id"),
-                    nome = it.getString("nome")
-                ))
-            }
-        }
-
-        registers.map {
-            println(it)
-        }
-
-        insert?.forEach {
-            println(it)
-        }
-
-        println("result $result")
-
-    }
-
-}

@@ -1,5 +1,8 @@
 package SendSMTP
 
+import Connections
+import Counter
+import SendSMTP.db.DBConnection
 import SendSMTP.model.Body
 import SendSMTP.model.ResponseFields
 import SendSMTP.service.Locaweb
@@ -8,10 +11,12 @@ import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import kotlin.system.measureTimeMillis
+import java.util.*
 
 
 class MassiveSend(
+    val socketClient: Connections,
+    val target: Counter
 ){
     private val retrofit = Retrofit.Builder()
         .baseUrl("https://api.smtplw.com.br/v1/")
@@ -21,8 +26,15 @@ class MassiveSend(
     private val call = retrofit
         .create(Locaweb::class.java)
 
+    private val db = DBConnection(
+        database ="mydb",
+        port ="5432",
+        realm ="",
+        user = "postgres"
+    )
+//    lateinit var manager: Observer
+
     private fun requirer(body: Body) {
-        // lateinit var item: ResponseFields
 
         call.emailResponse(body).enqueue(object: Callback<ResponseFields>{
             override fun onResponse(
@@ -30,7 +42,19 @@ class MassiveSend(
                 response: Response<ResponseFields>
             ){
                 if (response.isSuccessful) {
+
                     System.out.println("Response OK")
+
+                    response.body()?.let {
+                        /** Escreve na stream, uma instância ResponseFields */
+                        socketClient.writeData(it)
+
+                        /** Decrementa o número de tarefas */
+                        target.onChange()
+
+                        /** Insere os dados na DB */
+                        db.pgInsert(it)
+                    }
 
                 } else {
                     System.out.println("Response ERROR")
@@ -48,22 +72,19 @@ class MassiveSend(
 
     }
 
-    fun massiveSend(tasksNumber: Int, body: Body) {
-        for (item in 1..tasksNumber){
-            requirer(body)
+    fun massiveSend(
+        emails: Queue<String>,
+        body: String
+    ) {
+        for (item in emails){
+            requirer(Body(
+                item,
+                "nao-responder@seatelecom.com.br",
+                body,
+                "Eu"
+            ))
         }
     }
-}
 
-fun main() {
-
-    val time = measureTimeMillis {
-        MassiveSend().massiveSend(3,Body(
-            "yuri.ylr@outlook.com",
-            "nao-responder@seatelecom.com.br",
-            "blabla","Eu"))
-    }
-
-    System.out.println("tempo exec: $time")
 
 }

@@ -1,17 +1,16 @@
 import SendSMTP.MassiveSend
-import SendSMTP.model.Body
+import SendSMTP.model.ResponseFields
 import com.google.gson.Gson
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.json.Json
 import java.net.InetAddress
 import java.net.ServerSocket
 import java.io.*
 import java.lang.StringBuilder
 import java.net.Socket
-import java.util.*
-import java.util.stream.Collectors
-import kotlin.system.measureTimeMillis
+import java.util.Queue
+import java.util.LinkedList
+import java.util.Observer
+import java.util.Observable
 
 
 class Connections(
@@ -42,20 +41,44 @@ class Connections(
     }
 
     fun clientClose(){
-        this.server.close()
+        client.close()
     }
 
     /* Lê do inputStream */
-    fun read() = this.gson.fromJson(input.lines().collect(
-            Collectors.joining()
-    ), Request::class.java)
+    fun read(): Request {
 
+//        val resp = gson.fromJson(
+//            input.lines().collect(Collectors.joining()),
+//            Request::class.java
+//        )
+        val resp = StringBuilder()
 
-    fun write(response: Response){
+        while(true){
+            val ch = input.read()
+            if (ch == -1) break;
+            if (ch == 125) {
+                resp.append((125).toChar())
+                break
+            }
+            resp.append(ch.toChar())
+        }
+        println("gotcha")
+        return gson.fromJson(resp.toString(), Request::class.java)
+    }
+
+    fun write(response: String){
         /* Escreve no outputStream */
-        val outputStream = this.gson.toJson(
+        output.write(this.gson.toJson(
             response
-        )
+        ))
+        output.flush()
+    }
+
+    fun writeData(response: ResponseFields){
+        /* Escreve no outputStream */
+        response.data.attributes.body = "default"
+        output.write(gson.toJson(response))
+        output.flush()
     }
 
     @Serializable
@@ -69,12 +92,48 @@ class Connections(
     data class Request(
         val service: String,
         val task: Int,
-        val path: String
+        val template: String,
+        val emails: String
+    )
+
+    @Serializable
+    data class Test(
+        val sevice: String,
+        val task: String,
+        val templat: String,
+        val email: String
     )
 }
 
 
-fun main(args: Array<String>) {
+class Counter(
+    var amount: Int
+): Observable(){
+
+    fun onChange(){
+        amount--;
+
+        setChanged()
+        notifyObservers(amount)
+    }
+}
+
+class ManagerCounter(
+    val client: Connections
+): Observer{
+
+    override fun update(p0: Observable?, p1: Any?) {
+        p1?.let{
+            println(it)
+           if (it == 0) {
+               println("FECHOU!")
+               client.clientClose()
+           }
+        }
+    }
+}
+
+fun main(args: Array<String>){
 
     val server = ServerSocket(
         6060, 50, InetAddress.getByName("localhost")
@@ -83,31 +142,69 @@ fun main(args: Array<String>) {
     while (true) {
         val client = Connections(server)
 
-        Thread {
+        val response = client.read()
 
-            val response = client.read()
-
-            when(response.service){
-                "massiveSendEmails" -> {
-
+        /** Multiplexação dos serviços à serem executados. */
+        when(response.service){
+            "massiveSendEmails" -> {
                     val emailQueue: Queue<String> = LinkedList<String>()
-                    emailQueue.addAll(scrapyCsv(response.path))
 
-//                    val time = measureTimeMillis {
-//                        MassiveSend().massiveSend(3, Body(
-//                            "yuri.ylr@outlook.com",
-//                            "nao-responder@seatelecom.com.br",
-//                            "blabla","Eu")
-//                        )
-//                    }
-                    System.out.println("$response")
-                }
+                    emailQueue.addAll(scrapyCsv(response.emails))
+
+                    val template = takeTemplate(response.template)
+
+                    var target = Counter(emailQueue.size)
+                    target.addObserver(ManagerCounter(client))
+
+                    MassiveSend(
+                        client, target
+                    ).massiveSend(
+                        emailQueue,
+                        template
+                    )
+
+                    println("$response")
+                    println("${template}")
             }
-
-        }.start()
+        }
     }
 
 }
 
+/**
+ * Função que enfileira os emails recebidos por csv
+ * em uma Queue à ser decrementada.
+ */
+
 fun scrapyCsv(path: String): List<String>{
+    val list = mutableListOf<String>()
+
+    val buff = BufferedReader(FileReader(File(path))).use {
+        try {
+            while (it.ready()){
+                list.add(it.readLine())
+            }
+
+        }catch (e: IOException) {
+            println("Falha ao ler CSV")
+        }
+    }
+
+    return list
+}
+
+/**
+ * Função na qual faz o build de uma string
+ * contendo o template do path submetido.
+ */
+fun takeTemplate(path: String): String{
+    val buffString  = StringBuilder()
+
+    val buff = BufferedReader(FileReader(File(path))).use {
+        while (it.ready()) {
+            buffString.append(it.readLine())
+        }
+    }
+
+    return buffString.toString()
 }

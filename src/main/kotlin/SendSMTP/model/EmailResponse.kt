@@ -16,7 +16,7 @@ data class Data(
 
 data class Attributes(
     val bcc: Any,
-    val body: String,
+    var body: String,
     val cc: Any,
     val from: String,
     val headers: Headers,
