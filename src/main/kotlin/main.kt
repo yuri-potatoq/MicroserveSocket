@@ -1,4 +1,6 @@
-import SendSMTP.MassiveSend
+package SendSMTP
+
+
 import SendSMTP.model.ResponseFields
 import com.google.gson.Gson
 import kotlinx.serialization.Serializable

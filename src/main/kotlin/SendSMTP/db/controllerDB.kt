@@ -30,10 +30,10 @@ class DBConnection(
             conn.createStatement().executeUpdate("""
                 CREATE TABLE IF NOT EXISTS $tableName( 
                     id VARCHAR(12) NOT NULL, 
-                    target VARCHAR(24) NOT NULL, 
+                    target VARCHAR(35) NOT NULL, 
                     subject VARCHAR(45) NOT NULL, 
                     description VARCHAR(45), 
-                    title VARCHAR(24), 
+                    title VARCHAR(30), 
                     status VARCHAR(45) NOT NULL, 
                     launch TIMESTAMP, 
                     PRIMARY KEY (id)

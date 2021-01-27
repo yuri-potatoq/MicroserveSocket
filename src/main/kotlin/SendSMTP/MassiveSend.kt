@@ -1,7 +1,6 @@
 package SendSMTP
 
-import Connections
-import Counter
+
 import SendSMTP.db.DBConnection
 import SendSMTP.model.Body
 import SendSMTP.model.ResponseFields
