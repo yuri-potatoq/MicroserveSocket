@@ -14,7 +14,9 @@ import java.util.LinkedList
 import java.util.Observer
 import java.util.Observable
 
-
+/**
+ * Modificado 28/01
+ * */
 class Connections(
     private val server:ServerSocket
 ){
