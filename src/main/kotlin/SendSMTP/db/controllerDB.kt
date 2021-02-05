@@ -19,14 +19,15 @@ class DBConnection(
     private lateinit var conn: Connection
     private val dbName: String = "mydb"
     private val tableName: String = "send"
-
+    private val addr: String = System.getenv("MASSIVE_EMAIL_DB_ADDR")
 
     init {
         try {
             Class.forName("org.postgresql.Driver")
             this.conn = DriverManager.getConnection(
-                "jdbc:postgresql://localhost:5432/$dbName"
+                "jdbc:postgresql://$addr:5432/$dbName?user=admin&password=admin"
             )
+            
             conn.createStatement().executeUpdate("""
                 CREATE TABLE IF NOT EXISTS $tableName( 
                     id VARCHAR(12) NOT NULL, 

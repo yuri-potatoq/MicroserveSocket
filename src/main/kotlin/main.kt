@@ -140,7 +140,7 @@ class ManagerCounter(
 fun main(args: Array<String>){
 
     val server = ServerSocket(
-        6060, 50, InetAddress.getByName("localhost")
+        6060, 50, InetAddress.getByAddress(byteArrayOf(0,0,0,0))
     )
 
     while (true) {

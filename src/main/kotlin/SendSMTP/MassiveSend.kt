@@ -75,13 +75,19 @@ class MassiveSend(
         emails: Queue<String>,
         body: String
     ) {
-        for (item in emails){
+        var aux = 0
+        for (item in emails) {
+            if (aux >= 500) {
+                Thread.sleep(3000L)
+            }
+            
             requirer(Body(
                 item,
                 "nao-responder@seatelecom.com.br",
                 body,
                 "Eu"
             ))
+            aux++;
         }
     }
 
