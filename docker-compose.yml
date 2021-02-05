@@ -1,0 +1,33 @@
+version: "3.7"
+
+services:
+  microserve:
+    build: .
+    ports:
+      - "6060:6060"
+    volumes:
+      - /home/estagiario/templates:/app/templates
+    networks:
+      serve:
+        ipv4_address: 172.100.0.2
+    environment:
+      MASSIVE_EMAIL_DB_ADDR: 172.100.0.3
+  db:
+    image: postgres
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: mydb
+      POSTGRES_USER: admin
+    networks:
+      serve:
+        ipv4_address: 172.100.0.3
+
+networks:
+  serve:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.100.0.0/24
+          gateway: 172.100.0.1
