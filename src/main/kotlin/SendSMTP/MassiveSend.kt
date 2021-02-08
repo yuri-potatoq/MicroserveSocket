@@ -56,7 +56,9 @@ class MassiveSend(
                     }
 
                 } else {
-                    System.out.println("Response ERROR")
+                    System.out.println("Response ERROR " + response.message())
+                    println(response.raw())
+                    socketClient.clientClose()
                 }
             }
 
@@ -73,7 +75,8 @@ class MassiveSend(
 
     fun massiveSend(
         emails: Queue<String>,
-        body: String
+        body: String,
+        from: String
     ) {
         var aux = 0
         for (item in emails) {
@@ -82,9 +85,9 @@ class MassiveSend(
             }
             
             requirer(Body(
-                item,
-                "nao-responder@seatelecom.com.br",
-                body,
+                to = item,
+                from = from,
+                body = body,
                 "Eu"
             ))
             aux++;

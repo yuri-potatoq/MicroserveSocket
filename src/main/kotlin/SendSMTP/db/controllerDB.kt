@@ -17,7 +17,6 @@ class DBConnection(
     val user: String
 ){
     private lateinit var conn: Connection
-    private val dbName: String = "mydb"
     private val tableName: String = "send"
     private val addr: String = System.getenv("MASSIVE_EMAIL_DB_ADDR")
 
@@ -25,7 +24,7 @@ class DBConnection(
         try {
             Class.forName("org.postgresql.Driver")
             this.conn = DriverManager.getConnection(
-                "jdbc:postgresql://$addr:5432/$dbName?user=admin&password=admin"
+                "jdbc:postgresql://$addr:$port/$database?user=postgres"//&password=admin"
             )
             
             conn.createStatement().executeUpdate("""

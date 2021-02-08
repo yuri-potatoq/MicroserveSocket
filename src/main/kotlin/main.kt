@@ -95,18 +95,11 @@ class Connections(
     @Serializable
     data class Request(
         val service: String,
-        val task: Int,
         val template: String,
-        val emails: String
+        val emails: String,
+        val sender: String
     )
 
-    @Serializable
-    data class Test(
-        val sevice: String,
-        val task: String,
-        val templat: String,
-        val email: String
-    )
 }
 
 
@@ -163,8 +156,9 @@ fun main(args: Array<String>){
                     MassiveSend(
                         client, target
                     ).massiveSend(
-                        emailQueue,
-                        template
+                        emails = emailQueue,
+                        from = response.sender,
+                        body = template
                     )
 
                     println("$response")
